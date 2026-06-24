@@ -12,6 +12,16 @@ La aplicación recibe solicitudes en formato JSON, determina el tipo de producto
 Todos los servicios internos consumidos son servicios REST y la mensajería se maneja exclusivamente en formato JSON.
 
 ---
+## Componentes de la Solución
+
+1. Recibir la solicitud - Flujo Principal.
+2. Validar la información - Flujo Principal.
+3. Transformar el mensaje al formato requerido por el sistema legado - Subflujos de Negocio.
+4. Enviar la solicitud al sistema destino - Subflujos de Negocio.
+5. Publicar un evento notificando el resultado de la operación - Integración con IBM MQ.
+6. Registrar trazabilidad de todo el flujo -Integración con IBM MQ/Bases de Datos Oracle.
+
+---
 
 ## Componentes de la Solución
 
@@ -166,6 +176,7 @@ Almacena información asociada a errores funcionales y técnicos ocurridos duran
 * Plataforma: IBM App Connect Enterprise 12 (ACE 12).
 * Protocolo de exposición: HTTP.
 * Protocolo de integración: REST.
+* La totalidad de las pruebas y endpoints estan vinculados a un ambiente local.
 * Formato de mensajes: JSON.
 * Integración asíncrona: IBM MQ.
 * Persistencia: Base de datos relacional.
