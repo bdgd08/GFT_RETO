@@ -5,13 +5,11 @@
 
 ## Descripción General
 
-**ProductOpening_HTTP** es una aplicación desarrollada en IBM App Connect Enterprise (ACE) 12 que expone un servicio HTTP para la creación de productos financieros mediante arquitectura orientada a servicios.
+**ProductOpening_HTTP** es una aplicación desarrollada en IBM App Connect Enterprise (ACE) 12 que expone un servicio HTTP para el recibimiento de solicitudes de apertura de servicios financieros.
 
 La aplicación recibe solicitudes en formato JSON, determina el tipo de producto solicitado y enruta la petición al subflujo correspondiente para su procesamiento.
 
 Todos los servicios internos consumidos son servicios REST y la mensajería se maneja exclusivamente en formato JSON.
-
-Los códigos de respuesta HTTP implementados siguen las buenas prácticas REST, retornando códigos acordes al resultado de la operación.
 
 ---
 
@@ -47,8 +45,9 @@ Formato de intercambio:
 ### 1. ProductOpening_CDT.subflow
 
 Subflujo encargado de la creación de productos tipo CDT.
+Subflujo encargado de transformar la mensajeria al formato que espera el legado.
 
-#### Endpoint consumido
+#### Endpoint Sistema Legado consumido
 
 ```http
 http://127.0.0.1:9094/legacy/CDT
@@ -65,8 +64,9 @@ POST
 ### 2. ProductOpening_Checkings.subflow
 
 Subflujo encargado de la creación de cuentas corrientes.
+Subflujo encargado de transformar la mensajeria al formato que espera el legado.
 
-#### Endpoint consumido
+#### Endpoint Sistema Legado consumido
 
 ```http
 http://127.0.0.1:9093/legacy/Checking
@@ -83,8 +83,9 @@ POST
 ### 3. ProductOpening_Savings.subflow
 
 Subflujo encargado de la creación de cuentas de ahorro.
+Subflujo encargado de transformar la mensajeria al formato que espera el legado.
 
-#### Endpoint consumido
+#### Endpoint Sistema Legado consumido
 
 ```http
 http://127.0.0.1:9092/legacy/Savings
@@ -157,42 +158,6 @@ ace.errores
 ```
 
 Almacena información asociada a errores funcionales y técnicos ocurridos durante la ejecución de los flujos.
-
----
-
-## Arquitectura de Alto Nivel
-
-```text
-Cliente HTTP
-      |
-      v
-/product-requests
-      |
-      v
-ProductOpening_HTTP.msgflow
-      |
-      +----------------------------+
-      |                            |
-      |                            |
-      v                            v
-ProductOpening_CDT          ProductOpening_Checkings
-      |                            |
-      v                            v
-REST CDT                    REST Checking
-
-      |
-      v
-ProductOpening_Savings
-      |
-      v
-REST Savings
-
-Todos los subflujos:
-  - Registro exitoso -> MQ_NOTIFY
-  - Registro error   -> MQ_AUDIT_ERROR
-  - Auditoría BD
-  - Homologación BD
-```
 
 ---
 
