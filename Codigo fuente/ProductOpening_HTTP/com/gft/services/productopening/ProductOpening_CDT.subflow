@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:ComIbmCompute.msgnode="ComIbmCompute.msgnode" xmlns:ComIbmMQOutput.msgnode="ComIbmMQOutput.msgnode" xmlns:ComIbmWSRequest.msgnode="ComIbmWSRequest.msgnode" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" xmlns:eflow="http://www.ibm.com/wbi/2005/eflow" xmlns:utility="http://www.ibm.com/wbi/2005/eflow_utility" nsURI="com/gft/services/productopening/ProductOpening_CDT.subflow" nsPrefix="com_gft_services_productopening_ProductOpening_CDT.subflow">
+  <eClassifiers xmi:type="eflow:FCMComposite" name="FCMComposite_1" useDefaults="true" udpSupport="true" nodeLayoutStyle="SQUARE">
+    <eSuperTypes href="http://www.ibm.com/wbi/2005/eflow#//FCMBlock"/>
+    <eStructuralFeatures xmi:type="ecore:EAttribute" xmi:id="Property.UDP_EXITOSO" name="UDP_EXITOSO" defaultValueLiteral="201">
+      <eType xmi:type="ecore:EDataType" href="http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    </eStructuralFeatures>
+    <eStructuralFeatures xmi:type="ecore:EAttribute" xmi:id="Property.UDP_ERROR_TECNICO_COD" name="UDP_ERROR_TECNICO_COD" defaultValueLiteral="500">
+      <eType xmi:type="ecore:EDataType" href="http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    </eStructuralFeatures>
+    <eStructuralFeatures xmi:type="ecore:EAttribute" xmi:id="Property.UDP_ERROR_TECNICO_MSJ" name="UDP_ERROR_TECNICO_MSJ" defaultValueLiteral="Error Interno">
+      <eType xmi:type="ecore:EDataType" href="http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    </eStructuralFeatures>
+    <translation xmi:type="utility:TranslatableString" key="ProductOpening_CDT" bundleName="com/gft/services/productopening/ProductOpening_CDT" pluginId="ProductOpening_HTTP"/>
+    <colorGraphic16 xmi:type="utility:GIFFileGraphic" resourceName="platform:/plugin/ProductOpening_HTTP/icons/full/obj16/ProductOpening_CDT.gif"/>
+    <colorGraphic32 xmi:type="utility:GIFFileGraphic" resourceName="platform:/plugin/ProductOpening_HTTP/icons/full/obj30/ProductOpening_CDT.gif"/>
+    <composition>
+      <nodes xmi:type="eflow:FCMSource" xmi:id="InTerminal.Input" location="8,15">
+        <translation xmi:type="utility:TranslatableString" key="InTerminal.Input_ProductOpening_CDT" bundleName="com/gft/services/productopening/ProductOpening_CDT" pluginId="ProductOpening_HTTP"/>
+      </nodes>
+      <nodes xmi:type="eflow:FCMSink" xmi:id="OutTerminal.Output" location="547,144">
+        <translation xmi:type="utility:TranslatableString" key="OutTerminal.Output_ProductOpening_CDT" bundleName="com/gft/services/productopening/ProductOpening_CDT" pluginId="ProductOpening_HTTP"/>
+      </nodes>
+      <nodes xmi:type="ComIbmCompute.msgnode:FCMComposite_1" xmi:id="FCMComposite_1_1" location="99,143" computeExpression="esql://routine/com.gft.services.productopening#ProductOpening_CDT_Compute.Main">
+        <translation xmi:type="utility:ConstantString" string="JSON_LEGACY"/>
+      </nodes>
+      <nodes xmi:type="ComIbmWSRequest.msgnode:FCMComposite_1" xmi:id="FCMComposite_1_2" location="259,143" URLSpecifier="http://127.0.0.1:9094/legacy/CDT" timeoutForServer="10" httpVersion="1.1" protocol="TLS" messageDomainProperty="JSON">
+        <translation xmi:type="utility:ConstantString" string="HTTP Request"/>
+      </nodes>
+      <nodes xmi:type="ComIbmCompute.msgnode:FCMComposite_1" xmi:id="FCMComposite_1_3" location="410,144" computeExpression="esql://routine/com.gft.services.productopening#ProductOpening_CDT_Compute1.Main">
+        <translation xmi:type="utility:ConstantString" string="LEGACY_JSON"/>
+      </nodes>
+      <nodes xmi:type="ComIbmCompute.msgnode:FCMComposite_1" xmi:id="FCMComposite_1_4" location="399,25" computeExpression="esql://routine/com.gft.services.productopening#ProductOpening_CDT_Compute2.Main">
+        <translation xmi:type="utility:ConstantString" string="AuditServiceError"/>
+      </nodes>
+      <nodes xmi:type="ComIbmMQOutput.msgnode:FCMComposite_1" xmi:id="FCMComposite_1_5" location="598,26" queueName="MQ_AUDIT_ERROR.In" policyUrl="{MQPolicies}:Default1">
+        <translation xmi:type="utility:ConstantString" string="MQ_AUDIT_ERROR"/>
+      </nodes>
+      <nodes xmi:type="ComIbmMQOutput.msgnode:FCMComposite_1" xmi:id="FCMComposite_1_6" location="478,235" queueName="MQ_NOTIFY.In" policyUrl="{MQPolicies}:Default1">
+        <translation xmi:type="utility:ConstantString" string="MQ_NOTIFY"/>
+      </nodes>
+      <connections xmi:type="eflow:FCMConnection" xmi:id="FCMConnection_1" targetNode="FCMComposite_1_2" sourceNode="FCMComposite_1_1" sourceTerminalName="OutTerminal.out" targetTerminalName="InTerminal.in"/>
+      <connections xmi:type="eflow:FCMConnection" xmi:id="FCMConnection_2" targetNode="FCMComposite_1_3" sourceNode="FCMComposite_1_2" sourceTerminalName="OutTerminal.out" targetTerminalName="InTerminal.in"/>
+      <connections xmi:type="eflow:FCMConnection" xmi:id="FCMConnection_3" targetNode="OutTerminal.Output" sourceNode="FCMComposite_1_3" sourceTerminalName="OutTerminal.out" targetTerminalName="InTerminal.in"/>
+      <connections xmi:type="eflow:FCMConnection" xmi:id="FCMConnection_4" targetNode="FCMComposite_1_1" sourceNode="InTerminal.Input" sourceTerminalName="OutTerminal.out" targetTerminalName="InTerminal.in"/>
+      <connections xmi:type="eflow:FCMConnection" xmi:id="FCMConnection_5" targetNode="FCMComposite_1_4" sourceNode="FCMComposite_1_2" sourceTerminalName="OutTerminal.failure" targetTerminalName="InTerminal.in"/>
+      <connections xmi:type="eflow:FCMConnection" xmi:id="FCMConnection_6" targetNode="FCMComposite_1_4" sourceNode="FCMComposite_1_2" sourceTerminalName="OutTerminal.error" targetTerminalName="InTerminal.in"/>
+      <connections xmi:type="eflow:FCMConnection" xmi:id="FCMConnection_7" targetNode="OutTerminal.Output" sourceNode="FCMComposite_1_4" sourceTerminalName="OutTerminal.out" targetTerminalName="InTerminal.in"/>
+      <connections xmi:type="eflow:FCMConnection" xmi:id="FCMConnection_8" targetNode="FCMComposite_1_5" sourceNode="FCMComposite_1_4" sourceTerminalName="OutTerminal.out1" targetTerminalName="InTerminal.in"/>
+      <connections xmi:type="eflow:FCMConnection" xmi:id="FCMConnection_9" targetNode="FCMComposite_1_6" sourceNode="FCMComposite_1_3" sourceTerminalName="OutTerminal.out1" targetTerminalName="InTerminal.in"/>
+    </composition>
+    <propertyOrganizer>
+      <propertyDescriptor groupName="Group.Basic" configurable="true" userDefined="true" describedAttribute="Property.UDP_EXITOSO">
+        <propertyName xmi:type="utility:TranslatableString" key="Property.UDP_EXITOSO" bundleName="com/gft/services/productopening/ProductOpening_CDT" pluginId="ProductOpening_HTTP"/>
+        <propertyDescriptor groupName="Group.Basic" configurable="true" userDefined="true" describedAttribute="Property.UDP_ERROR_TECNICO_COD">
+          <propertyName xmi:type="utility:TranslatableString" key="Property.UDP_ERROR_TECNICO_COD" bundleName="com/gft/services/productopening/ProductOpening_CDT" pluginId="ProductOpening_HTTP"/>
+          <propertyDescriptor groupName="Group.Basic" configurable="true" userDefined="true" describedAttribute="Property.UDP_ERROR_TECNICO_MSJ">
+            <propertyName xmi:type="utility:TranslatableString" key="Property.UDP_ERROR_TECNICO_MSJ" bundleName="com/gft/services/productopening/ProductOpening_CDT" pluginId="ProductOpening_HTTP"/>
+          </propertyDescriptor>
+        </propertyDescriptor>
+      </propertyDescriptor>
+    </propertyOrganizer>
+    <stickyBoard/>
+  </eClassifiers>
+</ecore:EPackage>

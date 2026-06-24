@@ -1,0 +1,167 @@
+BROKER SCHEMA com.gft.services.productopening
+
+
+
+DECLARE UDP_EXITOSO EXTERNAL CHARACTER '';
+DECLARE UDP_ERROR_TECNICO_COD EXTERNAL CHARACTER '';
+DECLARE UDP_ERROR_TECNICO_MSJ EXTERNAL CHARACTER '';
+
+CREATE COMPUTE MODULE ProductOpening_Savings_Compute
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		CALL JSON_to_LEGACY ();
+		RETURN TRUE;
+	END;
+	
+	CREATE PROCEDURE JSON_to_LEGACY () BEGIN
+		
+		DECLARE InputMessageChannel REFERENCE TO InputRoot.JSON.Data;
+		DECLARE InputHeadersChannel REFERENCE TO InputRoot.HTTPInputHeader;
+		
+		--Aquí van los datos de consumos
+        CREATE FIELD OutputRoot.JSON.Data;   
+		DECLARE OutputMessageLegacy REFERENCE TO OutputRoot.JSON.Data;
+		DECLARE productTypeLegacy	CHARACTER '';
+		 
+		 /*SET productTypeLegacy =
+    	 THE(
+        	SELECT T.PRODUCTO_DESTINO
+        	FROM Database.ace.homologacion_productos AS T
+        	WHERE T.PRODUCTO_ORIGEN = InputMessageChannel.tipoProducto
+    	);*/
+			 
+		--SET OutputMessageLegacy.product_type	=	productTypeLegacy;
+		SET OutputMessageLegacy.product_type	=	'SAVINGS';
+		SET OutputMessageLegacy.customer_id 	=	InputMessageChannel.numeroDocumento;
+		SET OutputMessageLegacy.customer_name 	=	InputMessageChannel.nombreCliente;
+		SET OutputMessageLegacy.email 			=	InputMessageChannel.correo;
+		SET OutputMessageLegacy.source_system 	=	InputHeadersChannel."X-canal"; 
+		SET OutputMessageLegacy.requestId 		=	InputHeadersChannel."X-peticionId";
+		
+		--PROPAGATE TO TERMINAL 'out';
+	END;
+END MODULE;
+
+CREATE COMPUTE MODULE ProductOpening_Savings_Compute1
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		CALL LEGACY_TO_JSON();
+		--CALL MQ_Notification();
+		RETURN FALSE;
+	END;
+	
+	CREATE PROCEDURE LEGACY_TO_JSON () BEGIN
+		
+		DECLARE InputMessageLegacy 		REFERENCE TO InputRoot.JSON.Data;
+		DECLARE inputHeadersLegacy 		REFERENCE TO InputRoot.HTTPResponseHeader;
+		
+		--Mapeo respuesta JSON
+		CREATE FIELD OutputRoot.JSON.Data;
+		DECLARE OutputMessageChannel REFERENCE TO OutputRoot.JSON.Data;
+		
+		DECLARE rtaCodHttp CHARACTER '';
+		DECLARE rtaDesHttp CHARACTER '';
+		
+		SET rtaCodHttp = CAST(inputHeadersLegacy."X-Original-HTTP-Status-Code" AS CHARACTER);
+		SET rtaDesHttp = CAST(inputHeadersLegacy."X-Original-HTTP-Status-Line" AS CHARACTER);	
+		
+		IF rtaCodHttp = UDP_EXITOSO THEN
+			SET OutputMessageChannel.rtaCodHttp			=	rtaCodHttp;
+			SET OutputMessageChannel.rtaDesHttp			=	rtaDesHttp;
+			SET OutputMessageChannel.tipoEvento			=	InputMessageLegacy.eventType;
+			SET OutputMessageChannel.tipoProducto 		=	InputMessageLegacy.productType;
+			SET OutputMessageChannel.peticionId 		=	InputMessageLegacy.requestId;
+			SET OutputMessageChannel.fecha 				=	CAST(InputMessageLegacy.timestamp AS CHARACTER FORMAT 'yyyy-MM-dd HH:mm:ss');
+		ELSE
+			SET OutputMessageChannel.rtaCodHttp			=	rtaCodHttp;
+			SET OutputMessageChannel.rtaDesHttp			=	rtaDesHttp;
+			SET OutputMessageChannel.codErrorLegacy		=	'2801';
+			SET OutputMessageChannel.msjErrorLegacy 	= 	UDP_ERROR_TECNICO_MSJ || 'En /legacy/Savings';
+		END IF;
+		
+		PROPAGATE TO TERMINAL 'out';	
+	END;
+	
+	CREATE PROCEDURE MQ_Notification() BEGIN
+    	
+    	DECLARE inputHeadersLegacy 		REFERENCE TO InputRoot.HTTPResponseHeader;
+    	DECLARE InputMessageLegacy 		REFERENCE TO InputRoot.JSON.Data;
+    	
+        DECLARE rtaCodHttp CHARACTER '';
+		DECLARE rtaDesHttp CHARACTER '';
+		
+		SET rtaCodHttp = CAST(inputHeadersLegacy."X-Original-HTTP-Status-Code" AS CHARACTER);
+		SET rtaDesHttp = CAST(inputHeadersLegacy."X-Original-HTTP-Status-Line" AS CHARACTER);
+
+       
+		CREATE LASTCHILD OF OutputRoot DOMAIN 'XMLNSC';
+		
+		SET OutputRoot.XMLNSC.Auditoria.codigo = rtaCodHttp;
+		SET OutputRoot.XMLNSC.Auditoria.mensaje = rtaDesHttp;
+		
+		SET OutputRoot.XMLNSC.Auditoria.eventType 	= InputMessageLegacy.eventType; 
+		SET OutputRoot.XMLNSC.Auditoria.productType = InputMessageLegacy.productType;
+		SET OutputRoot.XMLNSC.Auditoria.requestId 	= InputMessageLegacy.requestId;
+		SET OutputRoot.XMLNSC.Auditoria.fecha 		= CAST(InputMessageLegacy.timestamp AS CHARACTER FORMAT 'yyyy-MM-dd HH:mm:ss');
+		
+		PROPAGATE TO TERMINAL 'out1';
+        
+    END;
+	
+END MODULE;
+
+
+CREATE COMPUTE MODULE AuditServiceError
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+        CALL JSON_Error_Response();
+        --CALL MQ_Error_Notification();
+		RETURN FALSE;
+	END;
+
+    -- PROCEDURE 1: Respuesta JSON al usuario
+    CREATE PROCEDURE JSON_Error_Response() BEGIN
+
+        DECLARE inputHeadersLegacy 		REFERENCE TO InputRoot.HTTPResponseHeader;     
+        DECLARE rtaCodHttp CHARACTER '';
+		DECLARE rtaDesHttp CHARACTER '';
+		
+		SET rtaCodHttp = CAST(inputHeadersLegacy."X-Original-HTTP-Status-Code" AS CHARACTER);
+		SET rtaDesHttp = CAST(inputHeadersLegacy."X-Original-HTTP-Status-Line" AS CHARACTER);
+		
+		--Mapeo respuesta JSON
+		CREATE FIELD OutputRoot.JSON.Data;
+		DECLARE OutputMessageChannel REFERENCE TO OutputRoot.JSON.Data;
+
+		SET OutputMessageChannel.rtaCodHttp			=	rtaCodHttp;
+		SET OutputMessageChannel.rtaDesHttp			=	rtaDesHttp;
+		SET OutputMessageChannel.codErrorLegacy		=	'9999';
+		SET OutputMessageChannel.msjErrorLegacy 	= 	'Error en el procesamiento de la solicitud';
+        
+        --PROPAGATE TO TERMINAL 'out' FINALIZE NONE DELETE NONE;
+        PROPAGATE TO TERMINAL 'out';
+
+    END;
+
+    -- PROCEDURE 2: Notificacion asincrona a cola MQ
+    /*CREATE PROCEDURE MQ_Error_Notification() BEGIN
+    	
+    	DECLARE inputHeadersLegacy 		REFERENCE TO InputRoot.HTTPResponseHeader;     
+        DECLARE rtaCodHttp CHARACTER '';
+		DECLARE rtaDesHttp CHARACTER '';
+		
+		SET rtaCodHttp = CAST(inputHeadersLegacy."X-Original-HTTP-Status-Code" AS CHARACTER);
+		SET rtaDesHttp = CAST(inputHeadersLegacy."X-Original-HTTP-Status-Line" AS CHARACTER);
+
+       
+		CREATE LASTCHILD OF OutputRoot DOMAIN 'XMLNSC';
+		
+		SET OutputRoot.XMLNSC.Auditoria.codigo = rtaCodHttp;
+		SET OutputRoot.XMLNSC.Auditoria.mensaje = rtaDesHttp;
+		SET OutputRoot.XMLNSC.Auditoria.fecha = CURRENT_TIMESTAMP;
+		
+		PROPAGATE TO TERMINAL 'out1';
+        
+    END;*/
+END MODULE;
+

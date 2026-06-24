@@ -14,7 +14,7 @@ Todos los servicios internos consumidos son servicios REST y la mensajería se m
 ---
 ## Componentes de la Solución
 
-1. Recibir la solicitud - Flujo Principal.
+1. Recibir la solicitud/Enrutamiento - Flujo Principal.
 2. Validar la información - Flujo Principal.
 3. Transformar el mensaje al formato requerido por el sistema legado - Subflujos de Negocio.
 4. Enviar la solicitud al sistema destino - Subflujos de Negocio.
@@ -22,8 +22,6 @@ Todos los servicios internos consumidos son servicios REST y la mensajería se m
 6. Registrar trazabilidad de todo el flujo -Integración con IBM MQ/Bases de Datos Oracle.
 
 ---
-
-## Componentes de la Solución
 
 ### Flujo Principal
 

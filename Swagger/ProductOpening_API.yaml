@@ -1,0 +1,265 @@
+openapi: 3.0.3
+info:
+  title: ProductOpening API
+  description: >
+    API fachada para la apertura de productos financieros expuesta mediante IBM ACE 12.
+    Recibe la solicitud de apertura, determina el tipo de producto y delega
+    la operación al subflow correspondiente (Savings, Checking o CDT).
+  version: 1.0.0
+  contact:
+    name: GFT Integration Team
+
+servers:
+  - url: http://localhost:7800
+    description: Servidor local IBM ACE 12
+
+tags:
+  - name: ProductOpening
+    description: Operaciones de apertura de productos financieros
+
+paths:
+
+  /product-requests:
+    post:
+      tags:
+        - ProductOpening
+      summary: Apertura de producto financiero
+      description: >
+        Recibe la solicitud de apertura de un producto financiero.
+        Según el tipo de producto, el flujo fachada delega la operación
+        al subflow correspondiente: Savings, Checking o CDT.
+        Internamente consume el backend legado y retorna la respuesta homologada al canal.
+      operationId: createProductRequest
+      parameters:
+        - name: X-canal
+          in: header
+          required: true
+          description: Canal origen de la solicitud (ej. DIGITAL_CHANNEL, WEB, APP)
+          schema:
+            type: string
+            example: DIGITAL_CHANNEL
+        - name: X-peticionId
+          in: header
+          required: true
+          description: Identificador único de la petición generado por el canal consumidor
+          schema:
+            type: string
+            example: "REQ-20260624-001"
+        - name: X-Original-HTTP-Status-Code
+          in: header
+          required: false
+          description: Código HTTP original retornado por el backend legado
+          schema:
+            type: string
+            example: "201"
+        - name: X-Original-HTTP-Reason-Phrase
+          in: header
+          required: false
+          description: Descripción del código HTTP original retornado por el backend legado
+          schema:
+            type: string
+            example: "Created"
+
+      requestBody:
+        required: true
+        description: Datos de la solicitud de apertura de producto
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductOpeningRequest'
+            examples:
+              aperturaCDT:
+                summary: Apertura de CDT
+                value:
+                  tipoProducto: "CDT"
+                  numeroDocumento: "12345678"
+                  nombreCliente: "Juan Perez"
+                  correo: "juan@email.com"
+                  flujoProducto: "3"
+              aperturaSavings:
+                summary: Apertura de cuenta de ahorros
+                value:
+                  tipoProducto: "SAVINGS"
+                  numeroDocumento: "12345678"
+                  nombreCliente: "Juan Perez"
+                  correo: "juan@email.com"
+                  flujoProducto: "1"
+              aperturaChecking:
+                summary: Apertura de cuenta corriente
+                value:
+                  tipoProducto: "CHECKING"
+                  numeroDocumento: "12345678"
+                  nombreCliente: "Juan Perez"
+                  correo: "juan@email.com"
+                  flujoProducto: "2"
+
+      responses:
+        '201':
+          description: Producto creado exitosamente
+          headers:
+            X-Original-HTTP-Status-Code:
+              description: Código HTTP retornado por el backend legado
+              schema:
+                type: string
+                example: "201"
+            X-Original-HTTP-Reason-Phrase:
+              description: Descripción del código HTTP retornado por el backend legado
+              schema:
+                type: string
+                example: "Created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductOpeningResponse'
+              example:
+                tipoEvento: "PRODUCT_REQUEST_CREATED"
+                tipoProducto: "CDT"
+                peticionId: "12312312312"
+                fecha: "2026-06-18T12:00:00Z"
+
+        '500':
+          description: Error en el procesamiento de la solicitud
+          headers:
+            X-Original-HTTP-Status-Code:
+              description: Código HTTP retornado por el backend legado
+              schema:
+                type: string
+                example: "500"
+            X-Original-HTTP-Reason-Phrase:
+              description: Descripción del código HTTP retornado por el backend legado
+              schema:
+                type: string
+                example: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                mensajeCodigo: "9999"
+                mensajeDesc: "Error en el procesamiento de la solicitud"
+
+components:
+  schemas:
+
+    ProductOpeningRequest:
+      type: object
+      required:
+        - tipoProducto
+        - numeroDocumento
+        - nombreCliente
+        - correo
+        - flujoProducto
+      properties:
+        tipoProducto:
+          type: string
+          description: >
+            Tipo de producto a aperturar.
+            Valores posibles: SAVINGS, CHECKING, CDT
+          enum:
+            - SAVINGS
+            - CHECKING
+            - CDT
+          example: "CDT"
+        numeroDocumento:
+          type: string
+          description: Número de documento de identidad del cliente
+          example: "12345678"
+        nombreCliente:
+          type: string
+          description: Nombre completo del cliente
+          example: "Juan Perez"
+        correo:
+          type: string
+          format: email
+          description: Correo electrónico del cliente
+          example: "juan@email.com"
+        flujoProducto:
+          type: string
+          description: >
+            Identificador del flujo de producto a ejecutar.
+            1 = Savings, 2 = Checking, 3 = CDT
+          enum:
+            - "1"
+            - "2"
+            - "3"
+          example: "3"
+
+    ProductOpeningResponse:
+      type: object
+      properties:
+        tipoEvento:
+          type: string
+          description: Tipo de evento generado por el backend legado
+          example: "PRODUCT_REQUEST_CREATED"
+        tipoProducto:
+          type: string
+          description: Tipo de producto aperturado
+          example: "CDT"
+        peticionId:
+          type: string
+          description: Identificador de la petición retornado por el legado
+          example: "12312312312"
+        fecha:
+          type: string
+          format: date-time
+          description: Fecha y hora de creación del producto en formato ISO 8601
+          example: "2026-06-18T12:00:00Z"
+
+    ErrorResponse:
+      type: object
+      properties:
+        mensajeCodigo:
+          type: string
+          description: Código interno del error
+          example: "9999"
+        mensajeDesc:
+          type: string
+          description: Descripción del error ocurrido
+          example: "Error en el procesamiento de la solicitud"
+
+  # Modelos internos de los subflows (referencia documental)
+  # Estos no son expuestos directamente al canal consumidor
+  # sino que son consumidos internamente por ACE hacia el legado
+
+    LegacyRequest:
+      type: object
+      description: >
+        Estructura interna enviada por ACE al backend legado.
+        Generada por los subflows ProductOpening_Savings,
+        ProductOpening_Checkings y ProductOpening_CDT.
+      properties:
+        product_type:
+          type: string
+          example: "SAVINGS"
+        customer_id:
+          type: string
+          example: "12345678"
+        customer_name:
+          type: string
+          example: "Juan Perez"
+        email:
+          type: string
+          example: "juan@email.com"
+        source_system:
+          type: string
+          example: "DIGITAL_CHANNEL"
+
+    LegacyResponse:
+      type: object
+      description: >
+        Estructura interna retornada por el backend legado hacia ACE.
+        Homologada por los subflows antes de ser entregada al canal consumidor.
+      properties:
+        eventType:
+          type: string
+          example: "PRODUCT_REQUEST_CREATED"
+        productType:
+          type: string
+          example: "CDT"
+        requestId:
+          type: string
+          example: "12345"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-06-18T12:00:00Z"
