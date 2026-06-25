@@ -136,7 +136,7 @@ CREATE COMPUTE MODULE AuditServiceError
 		SET OutputMessageChannel.rtaCodHttp			=	rtaCodHttp;
 		SET OutputMessageChannel.rtaDesHttp			=	rtaDesHttp;
 		SET OutputMessageChannel.codErrorLegacy		=	'9999';
-		SET OutputMessageChannel.msjErrorLegacy 	= 	'Error en el procesamiento de la solicitud';
+		SET OutputMessageChannel.msjErrorLegacy 	= 	UDP_ERROR_TECNICO_MSJ || ' en /legacy/Savings';
         
         --PROPAGATE TO TERMINAL 'out' FINALIZE NONE DELETE NONE;
         PROPAGATE TO TERMINAL 'out';
@@ -156,9 +156,11 @@ CREATE COMPUTE MODULE AuditServiceError
        
 		CREATE LASTCHILD OF OutputRoot DOMAIN 'XMLNSC';
 		
-		SET OutputRoot.XMLNSC.Auditoria.codigo = rtaCodHttp;
-		SET OutputRoot.XMLNSC.Auditoria.mensaje = rtaDesHttp;
-		SET OutputRoot.XMLNSC.Auditoria.fecha = CURRENT_TIMESTAMP;
+		SET OutputRoot.XMLNSC.Auditoria.codigo 			= rtaCodHttp;
+		SET OutputRoot.XMLNSC.Auditoria.mensaje 		= rtaDesHttp;
+		SET OutputRoot.XMLNSC.Auditoria.fecha 			= CURRENT_TIMESTAMP;
+		SET OutputRoot.XMLNSC.Auditoria.msjErrorLegado 	= UDP_ERROR_TECNICO_MSJ || ' en /legacy/Cheking';
+		SET OutputRoot.XMLNSC.Auditoria.peticionId	 	= Environment.Variables.PtcionId;
 		
 		PROPAGATE TO TERMINAL 'out1';
         

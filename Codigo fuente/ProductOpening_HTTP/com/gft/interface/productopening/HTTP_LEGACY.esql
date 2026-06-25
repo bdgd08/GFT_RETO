@@ -38,7 +38,8 @@ CREATE COMPUTE MODULE HTTP_LEGACY
 		ELSEIF productTypeRoute = UDP_FLUJO_3 THEN 
 			PROPAGATE TO TERMINAL 'out2';
 		 ELSE	
-			THROW USER EXCEPTION MESSAGE 2951 VALUES('Error del legado: ');
+			THROW USER EXCEPTION MESSAGE 2951 VALUES('No se encontró producto ');
+			SET Environment.Variables.codErroFachade	=  '1558';
 		END IF;
 	
 	END;
@@ -94,6 +95,7 @@ CREATE COMPUTE MODULE LEGACY_HTTP
 			--Body
 			SET OutputChannelJSON.mensajeCodigo	=	InputLegacyJSON.codErrorLegacy;
 			SET OutputChannelJSON.mensajeDesc	=	InputLegacyJSON.msjErrorLegacy;	
+			SET OutputChannelJSON.peticionId 	=	Environment.Variables.PtcionId;
 		END IF;		
 		
 		--PROPAGATE TO TERMINAL 'out';			
@@ -129,16 +131,21 @@ CREATE COMPUTE MODULE AuditarError
         DECLARE inputHeaders REFERENCE TO InputRoot.HTTPResponseHeader;
         DECLARE errorCode    CHARACTER;
         DECLARE errorMessage CHARACTER;
+        
+        CREATE FIELD OutputRoot.HTTPReplyHeader;
+		DECLARE OutputHeaderChannel REFERENCE TO OutputRoot.HTTPReplyHeader;
 
         -- Captura el codigo y mensaje del error que viene del nodo fallido
         SET errorCode    = CAST(inputHeaders.":StatusCode" AS CHARACTER);
         SET errorMessage = 'Error en el procesamiento de la solicitud';
 
+		SET OutputHeaderChannel."X-Original-HTTP-Reason-Phrase" = 'Error en el procesamiento de la solicitud';
+		SET OutputHeaderChannel."X-Original-HTTP-Status-Code" 	= '500';
         -- Construye respuesta JSON para el usuario
         SET OutputRoot.HTTPReplyHeader."Content-Type" = 'application/json';
-        SET OutputRoot.JSON.Data.codigoError  		  = errorCode;
+        SET OutputRoot.JSON.Data.codigoError  		  = COALESCE (Environment.Variables.codErroFachade, errorCode);
         SET OutputRoot.JSON.Data.mensajeError  		  = errorMessage;
-        SET OutputRoot.JSON.Data.peticionId    		  = InputRoot.JSON.Data.requestId;
+        SET OutputRoot.JSON.Data.peticionId    		  = Environment.Variables.PtcionId;
 
         PROPAGATE TO TERMINAL 'out';
 
